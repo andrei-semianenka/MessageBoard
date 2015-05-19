@@ -1,0 +1,271 @@
+﻿@using MessageBoard.Entities;
+@using MessageBoard.Models;
+@using MessageBoard.ViewModels;
+
+@model MessageBoard.ViewModels.SendMessageViewModel
+
+@{
+    ViewBag.Title = "Send Message";
+    //Layout = "~/Views/_ViewStart.cshtml";
+}
+
+@*
+    <h1 style="color: red">My session ID: @HttpContext.Current.Session.SessionID</h1>
+    <h1 style="color: red">Sort field name: @Model.SortFieldName</h1>
+    <h1 style="color: red">Sort ascending: @Model.SortAscending</h1>
+*@
+
+@{
+    string messageColorName = "lightgreen";
+    
+    if (Model.ResultStatus == ActionResultStatus.Fail)
+    {
+        messageColorName = "red";
+    }
+    else if (Model.ResultStatus == ActionResultStatus.Warning)
+    {
+        messageColorName = "orange";
+    }
+}
+
+<h3 style="color: @messageColorName">@Model.ResultMessage</h3>
+
+@using (@Html.BeginForm("SendMessage", "Home", FormMethod.Post))
+{
+    <h2>
+        Message:
+    </h2>
+
+    @Html.TextArea("TextArea_MessageText", HttpUtility.HtmlEncode(Model.MessageText), 5, 200, null);
+    @Html.Hidden("Hidden_SortFieldName", Model.SortFieldName);
+    @Html.Hidden("Hidden_SortAscending", Model.SortAscending);
+
+    <br /><br />
+
+    // disable submit button after click, to avoid user doulbesending message if server is processing postback too slow
+    // no need to bother about reenabling, as we reload page on postback
+    <input id="Button_Send" type="submit" value="Send!" onclick="this.disabled=true;this.parentNode.submit();" />
+}
+
+<br /><br />
+
+<h2>
+    My messages:
+</h2>
+
+@Html.ActionLink(
+    linkText: "UserId",
+    actionName: "SendMessage", 
+    controllerName: "Home",
+    routeValues: new
+    {
+        SortFieldName = "UserId",
+        SortAscending = (Model.SortFieldName == "UserId" ? (!Model.SortAscending).ToString() : "True")
+    },
+    htmlAttributes: null
+)
+
+@Html.ActionLink(
+    linkText: "Time",
+    actionName: "SendMessage",
+    controllerName: "Home",
+    routeValues: new
+    {
+        SortFieldName = "Time",
+        SortAscending = (Model.SortFieldName == "Time" ? (!Model.SortAscending).ToString() : "True")
+    },
+    htmlAttributes: null
+)
+
+@Html.ActionLink(
+    linkText: "Text",
+    actionName: "SendMessage",
+    controllerName: "Home",
+    routeValues: new
+    {
+        SortFieldName = "Text",
+        SortAscending = (Model.SortFieldName == "Text" ? (!Model.SortAscending).ToString() : "True")
+    },
+    htmlAttributes: null
+)
+
+@{
+    List<MessageEntity> messages = (List<MessageEntity>)HttpContext.Current.Application["Messages"];
+    List<MessageEntity> sortedMessages = new List<MessageEntity>();
+
+    // other option of data structurue for messages store
+    
+    if(Defines.USE_DICTIONARY)
+    {
+        Dictionary<string, List<MessageEntity>> messagesDictionary = (Dictionary<string, List<MessageEntity>>)HttpContext.Current.Application["MessagesDictionary"];
+
+        // do not sort messages list itself, as it will influence all users of the system    
+
+        if (messagesDictionary != null)
+        {
+            if(!messagesDictionary.ContainsKey(HttpContext.Current.Session.SessionID) ||
+                messagesDictionary[HttpContext.Current.Session.SessionID] == null)
+            {
+                messagesDictionary[HttpContext.Current.Session.SessionID] = new List<MessageEntity>();
+            }
+
+            List<MessageEntity> mySortedMessages = new List<MessageEntity>();
+            messages = new List<MessageEntity>();
+    
+            foreach (var item in messagesDictionary)
+            {
+                foreach (var m in item.Value)
+                {
+                    messages.Add(m);
+                }
+            }
+
+            if (Model.SortFieldName == "UserId")
+            {
+                if (Model.SortAscending)
+                {
+                    mySortedMessages = messagesDictionary[HttpContext.Current.Session.SessionID].OrderBy(i => i.UserId).ToList();
+                }
+                else
+                {
+                    mySortedMessages = messagesDictionary[HttpContext.Current.Session.SessionID].OrderByDescending(i => i.UserId).ToList();
+                }
+            }
+            else if (Model.SortFieldName == "Time")
+            {
+                if (Model.SortAscending)
+                {
+                    mySortedMessages = messagesDictionary[HttpContext.Current.Session.SessionID].OrderBy(i => i.Timestamp).ToList();
+                }
+                else
+                {
+                    mySortedMessages = messagesDictionary[HttpContext.Current.Session.SessionID].OrderByDescending(i => i.Timestamp).ToList();
+                }
+            }
+            else if (Model.SortFieldName == "Text")
+            {
+                if (Model.SortAscending)
+                {
+                    mySortedMessages = messagesDictionary[HttpContext.Current.Session.SessionID].OrderBy(i => i.Text).ToList();
+                }
+                else
+                {
+                    mySortedMessages = messagesDictionary[HttpContext.Current.Session.SessionID].OrderByDescending(i => i.Text).ToList();
+                }
+            }
+
+            foreach (var message in mySortedMessages)
+            {
+                @Html.Partial("~/Views/Home/_Message.cshtml", message);
+            }
+        }
+    }
+
+    // do not sort messages list itself, as it will influence all users of the system
+
+    if (messages != null)
+    {
+        if (Model.SortFieldName == "UserId")
+        {
+            if (Model.SortAscending)
+            {
+                sortedMessages = messages.OrderBy(i => i.UserId).ToList();
+            }
+            else
+            {
+                sortedMessages = messages.OrderByDescending(i => i.UserId).ToList();
+            }
+        }
+        else if (Model.SortFieldName == "Time")
+        {
+            if (Model.SortAscending)
+            {
+                sortedMessages = messages.OrderBy(i => i.Timestamp).ToList();
+            }
+            else
+            {
+                sortedMessages = messages.OrderByDescending(i => i.Timestamp).ToList();
+            }
+        }
+        else if (Model.SortFieldName == "Text")
+        {
+            if (Model.SortAscending)
+            {
+                sortedMessages = messages.OrderBy(i => i.Text).ToList();
+            }
+            else
+            {
+                sortedMessages = messages.OrderByDescending(i => i.Text).ToList();
+            }
+        }
+
+        foreach (var message in sortedMessages.Where(i => i.UserId == HttpContext.Current.Session.SessionID))
+        {
+            if (!Defines.USE_DICTIONARY)
+            {
+                Html.Partial("~/Views/Home/_Message.cshtml", message);
+            }
+        }
+    }
+}
+
+<h2>
+    All messages:
+</h2>
+
+@{
+    if (sortedMessages != null)
+    {
+        foreach (var message in sortedMessages)
+        {
+            @Html.Partial("~/Views/Home/_Message.cshtml", message);
+        }
+    }
+}
+
+<h2>
+    My messages in database:
+</h2>
+
+@using (var db = new MessagesDbContext())
+{
+    var query = from b in db.Messages
+                where b.UserId == HttpContext.Current.Session.SessionID
+                orderby b.Timestamp
+                select b;
+
+    foreach (var item in query)
+    {
+        @Html.Partial("~/Views/Home/_Message.cshtml", item);
+    }
+}
+
+<h2>
+    All messages in database:
+</h2>
+
+@using (var db = new MessagesDbContext())
+{
+    var query = from b in db.Messages
+                orderby b.Timestamp
+                select b;
+
+    foreach (var item in query)
+    {
+        @Html.Partial("~/Views/Home/_Message.cshtml", item);
+    }
+}
+
+
+
+
+
+
+<!--
+<form id="Form1" action="~/Views/Home/MyPage.cshtml" method="post">
+
+    <textarea id="TextArea1" rows="20" cols="200"></textarea>
+    <br />
+    <input id="Button1" type="submit" value="Send!"  />
+</form>
+-->

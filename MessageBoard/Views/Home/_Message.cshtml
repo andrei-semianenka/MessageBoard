@@ -1,0 +1,23 @@
+﻿@model MessageBoard.Entities.MessageEntity
+
+@{
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>AddProduct</title>
+</head>
+<body>
+    <div>
+        <label>UserId:</label>
+        @Html.TextBox("MessageUserId", Model.UserId)
+        <label>Time:</label>
+        @Html.TextBox("MessageTimestamp", Model.Timestamp)
+        <label>Text:</label>
+        @Html.TextBox("MessageText", Model.Text)
+    </div>
+</body>
+</html>
